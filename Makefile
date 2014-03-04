@@ -1,5 +1,5 @@
 
-test: test.cpp mailbox.o
+test: test.cpp mailbox.o v3d.h
 	g++ -o test -Wall -Wextra test.cpp mailbox.o -g
 
 mailbox.o: mailbox.c mailbox.h

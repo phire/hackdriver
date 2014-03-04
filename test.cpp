@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "mailbox.h"
+#include "v3d.h"
 
 // I/O access
 volatile unsigned *v3d;
@@ -34,21 +35,21 @@ void testControlLists() {
   list[0xbb] = 0; // Halt.
 
 // And then we setup the v3d pipeline to execute the control list.
-  printf("V3D_CT0CS: 0x%08x\n", v3d[0x100/4]); 
+  printf("V3D_CT0CS: 0x%08x\n", v3d[V3D_CT0CS]); 
   printf("Start Address: 0x%08x\n", bus_addr);
   // Current Address = start of our list (bus address)
-  v3d[0x110/4] = bus_addr;
+  v3d[V3D_CT0CA] = bus_addr;
   // End Address = just after the end of our list (bus address) 
   // This also starts execution.
-  v3d[0x108/4] = bus_addr + 0x100;
+  v3d[V3D_CT0EA] = bus_addr + 0x100;
   
   // print status while running
-  printf("V3D_CT0CS: 0x%08x, Address: 0x%08x\n", v3d[0x100/4], v3d[0x110/4]);
+  printf("V3D_CT0CS: 0x%08x, Address: 0x%08x\n", v3d[V3D_CT0CS], v3d[V3D_CT0CA]);
 
   // Wait a second to be sure the contorl list execution has finished
   sleep(1);
   // print the status again.
-  printf("V3D_CT0CS: 0x%08x, Address: 0x%08x\n", v3d[0x100/4], v3d[0x110/4]);
+  printf("V3D_CT0CS: 0x%08x, Address: 0x%08x\n", v3d[V3D_CT0CS], v3d[V3D_CT0CA]);
 
 // Release memory;
   unmapmem((void *) list, 0x100);
@@ -65,7 +66,7 @@ int main(int argc, char **argv) {
   // map v3d's registers into our address space.
   v3d = (unsigned *) mapmem(0x20c00000, 0x1000);
 
-  if(v3d[0] != 0x02443356) { // Magic number.
+  if(v3d[V3D_IDENT0] != 0x02443356) { // Magic number.
     printf("Error: V3D pipeline isn't powered up and accessable.\n");
     exit(-1);
   }
