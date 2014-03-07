@@ -86,14 +86,15 @@ void addfloat(uint8_t **list, float f) {
 
 void testBinner() {
 // Like above, we allocate/lock/map some videocore memory
-  // 64kb, 4k alignment
-  unsigned int handle = mem_alloc(mbox, 0x10000, 0x1000, MEM_FLAG_COHERENT | MEM_FLAG_ZERO);
+  // I'm just shoving everything in a single buffer because I'm lazy
+  // 8Mb, 4k alignment
+  unsigned int handle = mem_alloc(mbox, 0x800000, 0x1000, MEM_FLAG_COHERENT | MEM_FLAG_ZERO);
   if (!handle) {
     printf("Error: Unable to allocate memory");
     return;
   }
   uint32_t bus_addr = mem_lock(mbox, handle); 
-  uint8_t *list = (uint8_t*) mapmem(bus_addr, 0x10000);
+  uint8_t *list = (uint8_t*) mapmem(bus_addr, 0x800000);
 
   uint8_t *p = list;
 
@@ -103,7 +104,7 @@ void testBinner() {
   //   as soon as binning is finished.
   addbyte(&p, 112);
   addword(&p, bus_addr + 0x6200); // tile allocation memory address
-  addword(&p, 0x9c00); // tile allocation memory size
+  addword(&p, 0x9000); // tile allocation memory size
   addword(&p, bus_addr + 0x100); // Tile state data address
   addbyte(&p, 30); // 1920/64
   addbyte(&p, 17); // 1080/64 (16.875)
@@ -203,6 +204,51 @@ void testBinner() {
   addbyte(&p, 1); // bottom left
   addbyte(&p, 2); // bottom right
 
+// Render control list
+  p = list + 0xf200;
+
+  // Clear color
+  addbyte(&p, 114);
+  addword(&p, 0);
+  addword(&p, 0);
+  addword(&p, 0);
+  addbyte(&p, 0);
+
+  // Tile Rendering Mode Configuration
+  addbyte(&p, 113);
+  addword(&p, bus_addr + 0x10000); // framebuffer addresss
+  addshort(&p, 1920); // width
+  addshort(&p, 1080); // height
+  addbyte(&p, 0x04); // framebuffer mode (linear rgba8888)
+  addbyte(&p, 0x00);
+
+  // Link all binned lists together
+  for(int x = 0; x < 30; x++) {
+    for(int y = 0; y < 17; y++) {
+
+      // Tile Coordinates
+      addbyte(&p, 115);
+      addbyte(&p, x);
+      addbyte(&p, y);
+      
+      // Call Tile sublist
+      addbyte(&p, 17);
+      addword(&p, bus_addr + 0x6200 + (y * 30 + x) * 32);
+
+      // Last tile needs a special store instruction
+      if(x == 29 && y == 16) {
+        // Store resolved tile color buffer and signal end of frame
+        addbyte(&p, 25);
+      } else {
+        // Store resolved tile color buffer
+        addbyte(&p, 24);
+      }
+    }
+  }
+
+  int render_length = p - (list + 0xf200);
+
+
 // Run our control list
   printf("Binner control list constructed\n");
   printf("Start Address: 0x%08x, length: 0x%x\n", bus_addr, length);
@@ -218,14 +264,14 @@ void testBinner() {
 
   // just dump the buffer to a file
   FILE *f = fopen("binner_dump.bin", "w");
-  for(int i = 0; i < 0x10000; i++) {
+  for(int i = 0; i < 0x800000; i++) {
     fputc(list[i], f);
   }
   fclose(f);
   printf("Buffer containing binned tile lists dumpped to binner_dump.bin\n");
 
 // Release resources
-  unmapmem((void *) list, 0x10000);
+  unmapmem((void *) list, 0x800000);
   mem_unlock(mbox, handle);
   mem_free(mbox, handle);
 }
