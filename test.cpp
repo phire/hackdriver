@@ -104,7 +104,7 @@ void testBinner() {
   //   as soon as binning is finished.
   addbyte(&p, 112);
   addword(&p, bus_addr + 0x6200); // tile allocation memory address
-  addword(&p, 0x9000); // tile allocation memory size
+  addword(&p, 0x8000); // tile allocation memory size
   addword(&p, bus_addr + 0x100); // Tile state data address
   addbyte(&p, 30); // 1920/64
   addbyte(&p, 17); // 1080/64 (16.875)
@@ -164,9 +164,9 @@ void testBinner() {
   addbyte(&p, 0x01); // flags
   addbyte(&p, 6*4); // stride
   addbyte(&p, 0xcc); // num uniforms (not used)
-  addbyte(&p, 3); // num varyings
-  addword(&p, 0xaaaaaaaa); // Fragment shader code
-  addword(&p, 0xbbbbbbbb); // Fragment shader uniforms
+  addbyte(&p, 0); // num varyings
+  addword(&p, bus_addr + 0xfe00); // Fragment shader code
+  addword(&p, bus_addr + 0xff00); // Fragment shader uniforms
   addword(&p, bus_addr + 0xa0); // Vertex Data
 
 // Vertex Data
@@ -204,8 +204,21 @@ void testBinner() {
   addbyte(&p, 1); // bottom left
   addbyte(&p, 2); // bottom right
 
+// fragment shader
+  p = list + 0xfe00;
+  addword(&p, 0xffffffff);
+  addword(&p, 0xe0020ba7); /* ldi tlbc, 0xffffffff */
+  addword(&p, 0x009e7000);
+  addword(&p, 0x500009e7); /* nop; nop; sbdone */
+  addword(&p, 0x009e7000);
+  addword(&p, 0x300009e7); /* nop; nop; thrend */
+  addword(&p, 0x009e7000);
+  addword(&p, 0x100009e7); /* nop; nop; nop */
+  addword(&p, 0x009e7000);
+  addword(&p, 0x100009e7); /* nop; nop; nop */
+
 // Render control list
-  p = list + 0xf200;
+  p = list + 0xe200;
 
   // Clear color
   addbyte(&p, 114);
@@ -246,7 +259,7 @@ void testBinner() {
     }
   }
 
-  int render_length = p - (list + 0xf200);
+  int render_length = p - (list + 0xe200);
 
 
 // Run our control list
@@ -261,6 +274,17 @@ void testBinner() {
   while(v3d[V3D_CT0CS] & 0x20);
   
   printf("V3D_CT0CS: 0x%08x, Address: 0x%08x\n", v3d[V3D_CT0CS], v3d[V3D_CT0CA]);
+  printf("V3D_CT1CS: 0x%08x, Address: 0x%08x\n", v3d[V3D_CT1CS], v3d[V3D_CT1CA]);
+
+
+  v3d[V3D_CT1CA] = bus_addr + 0xe200;
+  v3d[V3D_CT1EA] = bus_addr + 0xe200 + render_length;
+
+  sleep(1);
+  //while(v3d[V3D_CT1CS] & 0x20);
+  
+  printf("V3D_CT1CS: 0x%08x, Address: 0x%08x\n", v3d[V3D_CT1CS], v3d[V3D_CT1CA]);
+  v3d[V3D_CT1CS] = 0x20;
 
   // just dump the buffer to a file
   FILE *f = fopen("binner_dump.bin", "w");
