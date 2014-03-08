@@ -206,6 +206,10 @@ void testBinner() {
 
 // fragment shader
   p = list + 0xfe00;
+  addword(&p, 0x009e7000);
+  addword(&p, 0x100009e7); /* nop; nop; nop */
+  addword(&p, 0x009e7000);
+  addword(&p, 0x100009e7); /* nop; nop; nop */
   addword(&p, 0xffffffff);
   addword(&p, 0xe0020ba7); /* ldi tlbc, 0xffffffff */
   addword(&p, 0x009e7000);
