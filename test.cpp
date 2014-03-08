@@ -190,7 +190,7 @@ void testBinner() {
   addfloat(&p, 0.0f); // Varying 2 (Blue)
 
   // Vertex: bottom right, Blue
-  addshort(&p, 1460 << 4); // X in 12.4 fixed point
+  addshort(&p, 1360 << 4); // X in 12.4 fixed point
   addshort(&p, 800 << 4); // Y in 12.4 fixed point
   addfloat(&p, 1.0f); // Z
   addfloat(&p, 1.0f); // 1/W
