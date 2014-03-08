@@ -235,6 +235,16 @@ void testBinner() {
   addbyte(&p, 0x04); // framebuffer mode (linear rgba8888)
   addbyte(&p, 0x00);
 
+  // Do a store of the first tile to force the tile buffer to be cleared
+  // Tile Coordinates
+  addbyte(&p, 115);
+  addbyte(&p, 0);
+  addbyte(&p, 0);
+  // Store Tile Buffer General
+  addbyte(&p, 28);
+  addshort(&p, 0); // Store nothing (just clear)
+  addword(&p, 0); // no address is needed
+
   // Link all binned lists together
   for(int x = 0; x < 30; x++) {
     for(int y = 0; y < 17; y++) {
