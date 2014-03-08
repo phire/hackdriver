@@ -172,8 +172,8 @@ void testBinner() {
 // Vertex Data
   p = list + 0xa0;
   // Vertex: Top, red
-  addshort(&p, 200 << 4); // Y in 12.4 fixed point
   addshort(&p, (1920/2) << 4); // X in 12.4 fixed point
+  addshort(&p, 200 << 4); // Y in 12.4 fixed point
   addfloat(&p, 1.0f); // Z
   addfloat(&p, 1.0f); // 1/W
   addfloat(&p, 1.0f); // Varying 0 (Red)
@@ -181,8 +181,8 @@ void testBinner() {
   addfloat(&p, 0.0f); // Varying 2 (Blue)
 
   // Vertex: bottom left, Green
-  addshort(&p, 800 << 4); // Y in 12.4 fixed point
   addshort(&p, 560 << 4); // X in 12.4 fixed point
+  addshort(&p, 800 << 4); // Y in 12.4 fixed point
   addfloat(&p, 1.0f); // Z
   addfloat(&p, 1.0f); // 1/W
   addfloat(&p, 0.0f); // Varying 0 (Red)
@@ -190,8 +190,8 @@ void testBinner() {
   addfloat(&p, 0.0f); // Varying 2 (Blue)
 
   // Vertex: bottom right, Blue
-  addshort(&p, 800 << 4); // Y in 12.4 fixed point
   addshort(&p, 1460 << 4); // X in 12.4 fixed point
+  addshort(&p, 800 << 4); // Y in 12.4 fixed point
   addfloat(&p, 1.0f); // Z
   addfloat(&p, 1.0f); // 1/W
   addfloat(&p, 0.0f); // Varying 0 (Red)
