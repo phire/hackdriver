@@ -83,8 +83,8 @@ void addfloat(uint8_t **list, float f) {
   *((*list)++) = (d >> 24) & 0xff;
 }
 
-
-void testBinner() {
+// Render a single triangle to memory.
+void testTriangle() {
 // Like above, we allocate/lock/map some videocore memory
   // I'm just shoving everything in a single buffer because I'm lazy
   // 8Mb, 4k alignment
@@ -164,7 +164,7 @@ void testBinner() {
   addbyte(&p, 0x01); // flags
   addbyte(&p, 6*4); // stride
   addbyte(&p, 0xcc); // num uniforms (not used)
-  addbyte(&p, 0); // num varyings
+  addbyte(&p, 3); // num varyings
   addword(&p, bus_addr + 0xfe00); // Fragment shader code
   addword(&p, bus_addr + 0xff00); // Fragment shader uniforms
   addword(&p, bus_addr + 0xa0); // Vertex Data
@@ -206,28 +206,32 @@ void testBinner() {
 
 // fragment shader
   p = list + 0xfe00;
+  addword(&p, 0x958e0dbf);
+  addword(&p, 0xd1724823); /* mov r0, vary; mov r3.8d, 1.0 */
+  addword(&p, 0x818e7176); 
+  addword(&p, 0x40024821); /* fadd r0, r0, r5; mov r1, vary */
+  addword(&p, 0x818e7376); 
+  addword(&p, 0x10024862); /* fadd r1, r1, r5; mov r2, vary */
+  addword(&p, 0x819e7540); 
+  addword(&p, 0x114248a3); /* fadd r2, r2, r5; mov r3.8a, r0 */
+  addword(&p, 0x809e7009); 
+  addword(&p, 0x115049e3); /* nop; mov r3.8b, r1 */
+  addword(&p, 0x809e7012); 
+  addword(&p, 0x116049e3); /* nop; mov r3.8c, r2 */
+  addword(&p, 0x159e76c0); 
+  addword(&p, 0x30020ba7); /* mov tlbc, r3; nop; thrend */
   addword(&p, 0x009e7000);
   addword(&p, 0x100009e7); /* nop; nop; nop */
-  addword(&p, 0x009e7000);
-  addword(&p, 0x100009e7); /* nop; nop; nop */
-  addword(&p, 0xffffffff);
-  addword(&p, 0xe0020ba7); /* ldi tlbc, 0xffffffff */
   addword(&p, 0x009e7000);
   addword(&p, 0x500009e7); /* nop; nop; sbdone */
-  addword(&p, 0x009e7000);
-  addword(&p, 0x300009e7); /* nop; nop; thrend */
-  addword(&p, 0x009e7000);
-  addword(&p, 0x100009e7); /* nop; nop; nop */
-  addword(&p, 0x009e7000);
-  addword(&p, 0x100009e7); /* nop; nop; nop */
 
 // Render control list
   p = list + 0xe200;
 
   // Clear color
   addbyte(&p, 114);
-  addword(&p, 0);
-  addword(&p, 0);
+  addword(&p, 0xff000000); // Opaque Black
+  addword(&p, 0xff000000); // 32 bit clear colours need to be repeated twice
   addword(&p, 0);
   addbyte(&p, 0);
 
@@ -294,19 +298,16 @@ void testBinner() {
   v3d[V3D_CT1CA] = bus_addr + 0xe200;
   v3d[V3D_CT1EA] = bus_addr + 0xe200 + render_length;
 
-  sleep(1);
-  //while(v3d[V3D_CT1CS] & 0x20);
+  while(v3d[V3D_CT1CS] & 0x20);
   
   printf("V3D_CT1CS: 0x%08x, Address: 0x%08x\n", v3d[V3D_CT1CS], v3d[V3D_CT1CA]);
   v3d[V3D_CT1CS] = 0x20;
 
-  // just dump the buffer to a file
-  FILE *f = fopen("binner_dump.bin", "w");
-  for(int i = 0; i < 0x800000; i++) {
-    fputc(list[i], f);
-  }
+  // just dump the frame to a file
+  FILE *f = fopen("frame.data", "w");
+  fwrite(list + 0x10000, (1920*1080*4), 1, f);
   fclose(f);
-  printf("Buffer containing binned tile lists dumpped to binner_dump.bin\n");
+  printf("frame buffer memory dumpped to frame.data\n");
 
 // Release resources
   unmapmem((void *) list, 0x800000);
@@ -329,7 +330,7 @@ int main(int argc, char **argv) {
   }
 
   // We now have access to the v3d registers, we should do something.
-  testBinner();
+  testTriangle();
 
   return 0;
 }
